@@ -20,3 +20,23 @@ func Lightly(d time.Duration, wake <-chan struct{}) bool {
 		return true
 	}
 }
+
+// TickLightly returns a channel that strobes with the specified period until
+// quit strobes.
+func TickLightly(period time.Duration, quit <-chan struct{}) <-chan time.Time {
+	ticker := time.NewTicker(period)
+	ch := make(chan time.Time)
+	go func() {
+		for {
+			select {
+			case t := <-ticker.C:
+				ch <- t
+			case <-quit:
+				ticker.Stop()
+				close(ch)
+				return
+			}
+		}
+	}()
+	return ch
+}
